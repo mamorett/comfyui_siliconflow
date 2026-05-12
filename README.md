@@ -1,96 +1,135 @@
-# ComfyUI — SiliconFlow Custom Nodes
+# 🎨 ComfyUI SiliconFlow Specialized Nodes
 
-ComfyUI nodes for generating images via **SiliconFlow** APIs.
+A production-grade collection of specialized ComfyUI nodes for the [SiliconFlow](https://siliconflow.cn/) Image Generation API. 
 
-## Structure
-
-```
-comfyui_siliconflow/
-├── __init__.py              # Entry point and node registration
-├── config.py                # API key management
-├── api_client.py            # SiliconFlow HTTP client
-├── node_model_selector.py   # Node: model selection
-├── node_inference.py        # Node: image generation
-├── apikey.txt               # ← API key (DO NOT share!)
-└── .gitignore               # Excludes apikey.txt from repository
-```
-
-## Installation
-
-1. **Copy the folder** to the ComfyUI custom nodes directory:
-   ```
-   ComfyUI/custom_nodes/comfyui_siliconflow/
-   ```
-
-2. **Insert your API key** into the `apikey.txt` file:
-   ```
-   sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-   > ⚠️ Never share this file. It is automatically excluded by `.gitignore`.
-
-3. **Restart ComfyUI**. The nodes will appear in the **SiliconFlow** category.
-
-## Available Nodes
-
-### 🤖 SiliconFlow — Model Selector
-
-Dynamically retrieves the list of image generation models from SiliconFlow and presents it as a dropdown.
-
-| Input | Type | Description |
-|-------|------|-------------|
-| `model` | Dropdown | Selected model |
-| `refresh_models` | Boolean | Force list refresh |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `model` | SFMODEL | Model ID to pass to the inference node |
+Unlike generic implementations, this extension provides **granular nodes** for every major model variant in the SiliconFlow documentation. Each node is surgically tailored to expose **only** the parameters supported by that specific model, eliminating UI clutter and "total chaos."
 
 ---
 
-### 🎨 SiliconFlow — Image Generation
+## 🚀 Key Features
 
-Main inference node. Supports text-to-image and image editing.
+- **Strict Documentation Adherence**: Every parameter, enum, and default is pulled directly from the SiliconFlow OpenAPI specification.
+- **Zero UI Clutter**: Irrelevant parameters are physically hidden by using separate nodes for different model families.
+- **Batch Processing**: Native ComfyUI batch support (returns B,H,W,C tensors) for models supporting multiple outputs.
+- **Secure Key Management**: API keys are stored locally in `apikey.txt` and never embedded in your workflow files.
+- **No Dependencies**: Pure Python implementation using standard ComfyUI primitives.
 
-| Input | Type | Required | Description |
-|-------|------|:---:|-------------|
-| `model` | SFMODEL | ✅ | Model from the selector node |
-| `prompt` | String | ✅ | Prompt text |
-| `width` | Int | ✅ | Output width (256–2048) |
-| `height` | Int | ✅ | Output height (256–2048) |
-| `seed` | Int | ✅ | Seed for generation |
-| `random_seed` | Boolean | ✅ | If enabled, uses random seed |
-| `num_steps` | Int | ✅ | Diffusion steps (1–100) |
-| `guidance_scale` | Float | ✅ | CFG scale (0–20) |
-| `negative_prompt` | String | ❌ | Elements to avoid |
-| `image_1` | IMAGE | ❌ | Input image 1 (edit/img2img) |
-| `image_2` | IMAGE | ❌ | Input image 2 |
-| `image_3` | IMAGE | ❌ | Input image 3 |
-| `image_4` | IMAGE | ❌ | Input image 4 |
+---
 
-| Output | Type | Description |
-|--------|------|-------------|
-| `image` | IMAGE | Generated image (ComfyUI tensor) |
+## 🛠️ Installation & Setup
 
-## Example Workflow
+1. **Clone the Repository**:
+   ```bash
+   cd ComfyUI/custom_nodes/
+   git clone https://github.com/your-repo/comfyui_siliconflow.git
+   ```
+2. **Configure API Key**:
+   - Create a file named `apikey.txt` inside the `comfyui_siliconflow` directory.
+   - Paste your SiliconFlow API key (starting with `sk-`) into this file.
+3. **Restart ComfyUI**: The nodes will appear under the `SiliconFlow` category.
 
-```
-[SiliconFlow Model Selector] → model
-                                     ↘
-[Load Image (opt.)] → image_1   [SiliconFlow Inference] → image → [Preview Image]
-                                     ↗
-                  prompt, width, height, seed...
-```
+---
 
-## Notes
+## 🧩 Node Reference
 
-- The **model list** is cached for 5 minutes to reduce API calls.
-- With `random_seed = True`, each execution produces a different result.
-- Input images (image_1–4) are **optional**: if omitted, the node works in pure text-to-image mode.
-- Compatibility with edit/img2img models depends on the specific model's support on SiliconFlow.
+All nodes are found under the `SiliconFlow` category in the node search menu.
 
-## Requirements
+### 1. FLUX.2 Series
 
-- ComfyUI (any recent version)
-- Python 3.8+
-- `Pillow` (PIL) — already included in ComfyUI
-- No additional external dependencies
+#### 🎨 SiliconFlow — FLUX.2 Pro
+*High-quality professional generation.*
+- **model**: `black-forest-labs/FLUX.2-pro`
+- **image_size**: `512x512`, `768x1024`, `1024x768`, `576x1024`, `1024x576`
+- **seed**: 0 - 9999999999
+- **output_format**: `png`, `jpeg`
+
+#### 🎨 SiliconFlow — FLUX.2 Flex
+*Flexible generation with CFG and step control.*
+- **model**: `black-forest-labs/FLUX.2-flex`
+- **image_size**: Same as Pro.
+- **seed**: 0 - 9999999999
+- **num_inference_steps**: 1 - 50 (Default: 25)
+- **cfg**: 0.1 - 20.0 (Default: 4.0)
+- **output_format**: `png`, `jpeg`
+
+---
+
+### 2. FLUX.1 Series (Advanced)
+
+#### 🎨 SiliconFlow — FLUX-1.1 Pro
+*The high-performance 1.1 variant.*
+- **model**: `black-forest-labs/FLUX-1.1-pro`
+- **width/height**: 256 - 1440 (Multiples of 32)
+- **seed**: 0 - 9999999999
+- **image_prompt**: (Optional) Input `IMAGE` to use as a visual prompt.
+- **prompt_upsampling**: `True/False`
+- **safety_tolerance**: 0 - 6 (Default: 2)
+- **output_format**: `png`, `jpeg`
+
+#### 🎨 SiliconFlow — FLUX-1.1 Pro Ultra
+*The ultimate generation node with batch and raw support.*
+- **model**: `black-forest-labs/FLUX-1.1-pro-Ultra`
+- **image_size**: `1024x1024`, `960x1280`, `768x1024`, `720x1440`, `720x1280`, `others`
+- **aspect_ratio**: `21:9` to `9:21` (Default: `1:1`)
+- **batch_size**: 1 - 4
+- **raw**: `True/False` (Less processed, more natural look)
+- **image_prompt**: Input `IMAGE` to remix.
+- **image_prompt_strength**: 0.0 - 1.0 (Blend between text and image prompt)
+- **safety_tolerance**: 0 - 6
+- **output_format**: `png`, `jpeg`
+
+#### 🎨 SiliconFlow — FLUX.1 Dev / Schnell
+*Efficient base models.*
+- **model**: `black-forest-labs/FLUX.1-dev`, `black-forest-labs/FLUX.1-schnell`
+- **image_size**: Spec-optimized presets (up to 2.3M pixels for Dev).
+- **num_inference_steps**: 1 - 30 (Dev only)
+- **prompt_enhancement**: `True/False`
+
+---
+
+### 3. Context & Image-to-Image
+
+#### 🎨 SiliconFlow — FLUX.1 Kontext
+*Advanced image-to-image with aspect ratio control.*
+- **model**: `black-forest-labs/FLUX.1-Kontext-max`, `black-forest-labs/FLUX.1-Kontext-pro`
+- **image**: Required `IMAGE` input.
+- **aspect_ratio**: e.g., `16:9`, `1:1`.
+- **prompt_upsampling**: `True/False`
+- **safety_tolerance**: 0 - 6
+
+#### 🎨 SiliconFlow — FLUX.1 Kontext Dev
+*Context editing with prompt enhancement.*
+- **model**: `black-forest-labs/FLUX.1-Kontext-dev`
+- **image**: Required `IMAGE` input.
+- **prompt_enhancement**: `True/False`
+
+---
+
+### 4. Qwen & Z-Image
+
+#### 🎨 SiliconFlow — Qwen Image
+*Supports both standard generation and image editing.*
+- **model**: `Qwen/Qwen-Image`, `Qwen/Qwen-Image-Edit`
+- **image_size**: Specialized Qwen resolutions (e.g., `1328x1328`, `1664x928`, etc.)
+- **batch_size**: 1 - 4
+- **guidance_scale**: 0.0 - 20.0 (Match degree between prompt and image)
+- **cfg**: 0.1 - 20.0 (Official recommendation: 4.0)
+- **image**: (Optional) For `Qwen-Image-Edit` models.
+- **num_inference_steps**: 1 - 100
+
+#### 🎨 SiliconFlow — Z-Image
+*Turbo-charged generation.*
+- **model**: `Tongyi-MAI/Z-Image-Turbo`
+- **image_size**: `512x512`, `768x1024`, `1024x576`, `576x1024`
+- **negative_prompt**: Elements to avoid.
+
+---
+
+## 💡 Usage Tips
+
+- **Model Refresh**: The node dropdowns automatically populate based on your API account permissions.
+- **Tensors**: All outputs are standard `(B, H, W, C)` tensors. If you generate a batch of 4, you can use standard ComfyUI `Batch Image` nodes to split them.
+- **Error Handling**: If a model request fails, check the ComfyUI console for detailed API error responses.
+
+## ⚖️ License
+MIT
