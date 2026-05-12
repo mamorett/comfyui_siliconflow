@@ -1,17 +1,8 @@
 """
-node_inference.py — ComfyUI node for image inference via SiliconFlow.
+node_inference.py — Unified ComfyUI node for SiliconFlow image generation.
 
-Input:
-  - model          : model string (from SiliconFlowModelSelector node)
-  - model_family   : model family string (from SiliconFlowModelSelector node)
-  - prompt         : prompt text
-  - image          : optional image (ComfyUI tensor) for edit/img2img models
-  - image_size     : output size as "widthxheight" string
-  - seed           : seed (−1 = random)
-  - random_seed    : if True, ignores seed and uses random value on each run
-
-Output:
-  - IMAGE          : ComfyUI image tensor (B,H,W,C) float32 [0,1]
+Combines model selection and inference in a single node.
+Dynamically shows/hides parameters based on the selected model family.
 """
 
 import io
@@ -20,22 +11,21 @@ import time
 
 import numpy as np
 
-# Import opzionale torch — ComfyUI lo ha sempre disponibile
+# Optional torch import — ComfyUI always has it available
 try:
     import torch
     HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
 
-# Import PIL — presente nell'ambiente ComfyUI
+# PIL import — available in ComfyUI environment
 try:
     from PIL import Image
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
 
-from .api_client import run_inference
-from .node_model_selector import IMAGE_SIZE_PRESETS, get_model_family
+from .api_client import run_inference, fetch_image_models
 
 
 def _tensor_to_base64(tensor) -> str:
@@ -58,7 +48,6 @@ def _tensor_to_base64(tensor) -> str:
         pil_img.save(buf, format="PNG")
         return base64.b64encode(buf.getvalue()).decode("utf-8")
     else:
-        # Fallback without PIL: raw PPM → base64
         import base64 as b64mod
         h, w, c = img_array.shape
         header = f"P6\n{w} {h}\n255\n".encode()
@@ -84,11 +73,231 @@ def _bytes_to_tensor(image_bytes: bytes):
         return arr[np.newaxis, ...]  # (1, H, W, C) numpy
 
 
-class SiliconFlowInference:
+# Model family detection
+def get_model_family(model_id: str) -> str:
+    """Detects the model family from the model ID string."""
+    model_lower = model_id.lower()
+
+    if "flux.2-pro" in model_lower:
+        return "FLUX.2-pro"
+    elif "flux.2-flex" in model_lower:
+        return "FLUX.2-flex"
+    elif "flux-1.1-pro-ultra" in model_lower:
+        return "FLUX-1.1-pro-Ultra"
+    elif "flux-1.1-pro" in model_lower:
+        return "FLUX-1.1-pro"
+    elif "flux.1-kontext-dev" in model_lower:
+        return "FLUX.1-Kontext-dev"
+    elif "flux.1-kontext" in model_lower:
+        return "FLUX.1-Kontext"
+    elif "flux.1-schnell" in model_lower:
+        return "FLUX.1-schnell"
+    elif "flux.1-dev" in model_lower:
+        return "FLUX.1-dev"
+    elif "qwen-image" in model_lower:
+        return "Qwen-Image"
+    elif "z-image" in model_lower:
+        return "Z-Image"
+    else:
+        return "Unknown"
+
+
+# Image size presets by model family (from API docs)
+IMAGE_SIZE_PRESETS = {
+    "FLUX.2-pro": ["512x512", "768x1024", "1024x768", "576x1024", "1024x576"],
+    "FLUX.2-flex": ["512x512", "768x1024", "1024x768", "576x1024", "1024x576"],
+    "FLUX.1-schnell": ["1024x1024", "512x1024", "768x512", "768x1024", "1024x576", "576x1024"],
+    "FLUX.1-dev": ["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"],
+    "FLUX-1.1-pro": None,  # Uses width/height
+    "FLUX-1.1-pro-Ultra": ["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"],
+    "FLUX.1-Kontext": None,  # Uses aspect_ratio
+    "FLUX.1-Kontext-dev": None,  # Uses image input only
+    "Qwen-Image": ["1328x1328", "1664x928", "928x1664", "1472x1140", "1140x1472", "1584x1056", "1056x1584"],
+    "Z-Image": ["512x512", "768x1024", "1024x576", "576x1024"],
+    "Unknown": ["1024x1024", "512x512", "768x1024", "1024x768"],
+}
+
+# Model parameters mapping (from API docs)
+# Indicates which parameters each model family supports
+MODEL_PARAMS = {
+    "FLUX.2-pro": {
+        "image_size": True,
+        "seed": True,
+        "output_format": True,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "prompt_enhancement": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "negative_prompt": False,
+        "image": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "FLUX.2-flex": {
+        "image_size": True,
+        "seed": True,
+        "cfg": True,
+        "num_inference_steps": True,
+        "output_format": True,
+        "guidance_scale": False,
+        "prompt_enhancement": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "negative_prompt": False,
+        "image": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "Qwen-Image": {
+        "image_size": True,
+        "seed": True,
+        "guidance_scale": True,
+        "cfg": True,
+        "num_inference_steps": True,
+        "negative_prompt": True,
+        "image": True,
+        "output_format": False,
+        "prompt_enhancement": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "Z-Image": {
+        "image_size": True,
+        "seed": True,
+        "negative_prompt": True,
+        "output_format": False,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "prompt_enhancement": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "image": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "FLUX.1-Kontext": {
+        "image_size": False,
+        "seed": True,
+        "aspect_ratio": True,
+        "output_format": True,
+        "prompt_upsampling": True,
+        "safety_tolerance": True,
+        "input_image": True,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "prompt_enhancement": False,
+        "negative_prompt": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "FLUX.1-Kontext-dev": {
+        "image_size": False,
+        "seed": True,
+        "prompt_enhancement": True,
+        "image": True,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "output_format": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "negative_prompt": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "FLUX-1.1-pro": {
+        "width_height": True,
+        "seed": True,
+        "prompt_upsampling": True,
+        "safety_tolerance": True,
+        "output_format": True,
+        "image_prompt": True,
+        "image_size": False,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "prompt_enhancement": False,
+        "negative_prompt": False,
+        "aspect_ratio": False,
+        "image": False,
+        "raw": False,
+    },
+    "FLUX-1.1-pro-Ultra": {
+        "image_size": True,
+        "seed": True,
+        "negative_prompt": True,
+        "aspect_ratio": True,
+        "safety_tolerance": True,
+        "output_format": True,
+        "image_prompt": True,
+        "image_prompt_strength": True,
+        "raw": True,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "prompt_enhancement": False,
+        "prompt_upsampling": False,
+        "width_height": False,
+        "image": False,
+    },
+    "FLUX.1-schnell": {
+        "image_size": True,
+        "seed": True,
+        "prompt_enhancement": True,
+        "num_inference_steps": False,
+        "guidance_scale": False,
+        "cfg": False,
+        "output_format": False,
+        "negative_prompt": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "image": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+    "FLUX.1-dev": {
+        "image_size": True,
+        "seed": True,
+        "num_inference_steps": True,
+        "prompt_enhancement": True,
+        "guidance_scale": False,
+        "cfg": False,
+        "output_format": False,
+        "negative_prompt": False,
+        "prompt_upsampling": False,
+        "safety_tolerance": False,
+        "image": False,
+        "aspect_ratio": False,
+        "width_height": False,
+        "image_prompt": False,
+        "raw": False,
+    },
+}
+
+
+class SiliconFlowImageGeneration:
     """
-    Main inference node for SiliconFlow.
-    Supports text-to-image and image editing (single input image).
-    Dynamically shows/hides parameters based on model family.
+    Unified node for SiliconFlow image generation.
+    Combines model selection and inference in a single node.
     """
 
     CATEGORY = "SiliconFlow"
@@ -99,13 +308,19 @@ class SiliconFlowInference:
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        # Default image sizes (will be dynamically updated based on model)
+        # Fetch model list
+        try:
+            models = fetch_image_models()
+        except Exception as e:
+            print(f"[SiliconFlow] Unable to retrieve models: {e}")
+            models = ["— Error: check apikey.txt —"]
+
+        # Default image sizes
         default_sizes = ["1024x1024", "512x512", "768x1024", "1024x768"]
 
         return {
             "required": {
-                "model": ("SFMODEL", {}),
-                "model_family": ("STRING", {"forceInput": True}),
+                "model": (models, {"default": models[0] if models else ""}),
                 "prompt": (
                     "STRING",
                     {
@@ -126,6 +341,12 @@ class SiliconFlowInference:
                     "BOOLEAN",
                     {"default": False, "label_on": "🎲 Random", "label_off": "Fixed"},
                 ),
+            },
+            "optional": {
+                "refresh_button": (
+                    "BOOLEAN",
+                    {"default": False, "label": "🔄 Refresh Models"},
+                ),
                 "num_steps": (
                     "INT",
                     {"default": 20, "min": 1, "max": 100, "step": 1},
@@ -134,8 +355,14 @@ class SiliconFlowInference:
                     "FLOAT",
                     {"default": 7.5, "min": 0.0, "max": 20.0, "step": 0.5},
                 ),
-            },
-            "optional": {
+                "cfg": (
+                    "FLOAT",
+                    {"default": 4.0, "min": 0.1, "max": 20.0, "step": 0.1},
+                ),
+                "output_format": (
+                    ["png", "jpeg"],
+                    {"default": "png"},
+                ),
                 "negative_prompt": (
                     "STRING",
                     {
@@ -145,26 +372,18 @@ class SiliconFlowInference:
                     },
                 ),
                 "image": ("IMAGE", {}),
-                "output_format": (
-                    ["png", "jpeg"],
-                    {"default": "png"},
-                ),
-                # FLUX.2-flex and Qwen-Image specific
-                "cfg": (
-                    "FLOAT",
-                    {"default": 4.0, "min": 0.1, "max": 20.0, "step": 0.1},
-                ),
-                # FLUX.1-schnell, FLUX.1-dev specific
                 "prompt_enhancement": (
                     "BOOLEAN",
                     {"default": False, "label": "✨ Prompt Enhancement"},
                 ),
-                # FLUX.1-Kontext, FLUX-1.1-pro specific
+                "prompt_upsampling": (
+                    "BOOLEAN",
+                    {"default": False, "label": "📈 Prompt Upsampling"},
+                ),
                 "safety_tolerance": (
                     "INT",
                     {"default": 2, "min": 0, "max": 6, "step": 1},
                 ),
-                # FLUX-1.1-pro specific (uses width/height instead of image_size)
                 "width": (
                     "INT",
                     {"default": 1024, "min": 256, "max": 1440, "step": 32},
@@ -173,12 +392,10 @@ class SiliconFlowInference:
                     "INT",
                     {"default": 768, "min": 256, "max": 1440, "step": 32},
                 ),
-                # FLUX.1-Kontext specific (uses aspect_ratio instead of image_size)
                 "aspect_ratio": (
                     "STRING",
                     {"default": "1:1", "placeholder": "e.g., 16:9, 9:16, 1:1"},
                 ),
-                # FLUX-1.1-pro-Ultra specific
                 "image_prompt": ("IMAGE", {}),
                 "image_prompt_strength": (
                     "FLOAT",
@@ -191,28 +408,36 @@ class SiliconFlowInference:
             },
         }
 
-    # Force re-execution when random_seed=True
     @classmethod
-    def IS_CHANGED(cls, random_seed: bool = False, **kwargs):
-        if random_seed:
-            return time.time()  # valore sempre diverso → riesegue sempre
+    def IS_CHANGED(cls, refresh_button: bool = False, **kwargs):
+        if refresh_button:
+            return float("random")  # Triggers re-execution
         return False
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, **kwargs):
+        """Validate inputs and return True if valid."""
+        model = kwargs.get("model", "")
+        if not model or model.startswith("—"):
+            return "Please select a valid model"
+        return True
 
     def generate(
         self,
         model: str,
-        model_family: str,
         prompt: str,
         image_size: str,
         seed: int,
         random_seed: bool,
-        num_steps: int,
-        guidance_scale: float,
+        refresh_button: bool = False,
+        num_steps: int = 20,
+        guidance_scale: float = 7.5,
+        cfg: float = None,
+        output_format: str = "png",
         negative_prompt: str = "",
         image=None,
-        output_format: str = "png",
-        cfg: float = None,
         prompt_enhancement: bool = None,
+        prompt_upsampling: bool = None,
         safety_tolerance: int = None,
         width: int = None,
         height: int = None,
@@ -222,13 +447,25 @@ class SiliconFlowInference:
         raw: bool = None,
     ) -> tuple:
 
+        # Handle refresh button
+        if refresh_button:
+            try:
+                models = fetch_image_models(force_refresh=True)
+                print(f"[SiliconFlow] Model list updated: {len(models)} models found.")
+            except Exception as e:
+                print(f"[SiliconFlow] Model refresh error: {e}")
+
+        # Detect model family
+        model_family = get_model_family(model)
+        params = MODEL_PARAMS.get(model_family, {})
+
         # Resolve seed
         effective_seed = random.randint(0, 2**32 - 1) if random_seed else seed
         print(f"[SiliconFlow] Generating with seed: {effective_seed}")
 
         # Convert input image to base64 if provided
         input_image_b64 = None
-        if image is not None:
+        if image is not None and (params.get("image", False) or params.get("input_image", False)):
             try:
                 input_image_b64 = _tensor_to_base64(image)
                 print(f"[SiliconFlow] Input image converted to base64.")
@@ -237,51 +474,52 @@ class SiliconFlowInference:
 
         # Convert image_prompt to base64 if provided
         image_prompt_b64 = None
-        if image_prompt is not None:
+        if image_prompt is not None and params.get("image_prompt", False):
             try:
                 image_prompt_b64 = _tensor_to_base64(image_prompt)
                 print(f"[SiliconFlow] Image prompt converted to base64.")
             except Exception as e:
                 print(f"[SiliconFlow] Image prompt conversion error: {e}")
 
-        # Get image size presets for this model family
-        size_presets = IMAGE_SIZE_PRESETS.get(model_family, [])
-        use_image_size = image_size if size_presets else None
+        # Determine image size parameter
+        use_image_size = None
+        if params.get("image_size", False):
+            use_image_size = image_size
+        elif params.get("width_height", False):
+            # FLUX-1.1-pro uses width/height
+            pass  # Handled separately
 
-        # For FLUX-1.1-pro, use width/height instead of image_size
-        if model_family == "FLUX-1.1-pro":
-            use_image_size = None
-
-        # For FLUX.1-Kontext, use aspect_ratio instead of image_size
-        if "FLUX.1-Kontext" in model_family:
-            use_image_size = None
+        # For FLUX.1-Kontext, use aspect_ratio
+        if not params.get("aspect_ratio", False):
+            aspect_ratio = None
 
         print(
             f"[SiliconFlow] Starting inference — model: {model} | "
-            f"family: {model_family} | size: {image_size}"
+            f"family: {model_family}"
         )
 
+        # Build API call parameters - only include what the model supports
         try:
             image_bytes = run_inference(
                 model=model,
                 prompt=prompt,
-                image_size=use_image_size,
+                image_size=use_image_size if params.get("image_size", False) else None,
                 seed=effective_seed,
-                input_image=input_image_b64,
-                negative_prompt=negative_prompt,
-                num_inference_steps=num_steps,
-                guidance_scale=guidance_scale,
-                cfg=cfg if model_family in ("FLUX.2-flex", "Qwen-Image") else None,
-                output_format=output_format,
-                prompt_enhancement=prompt_enhancement if model_family in ("FLUX.1-schnell", "FLUX.1-dev") else None,
-                prompt_upsampling=prompt_enhancement if "FLUX.1-Kontext" in model_family else None,
-                safety_tolerance=safety_tolerance if model_family in ("FLUX.1-Kontext", "FLUX-1.1-pro", "FLUX-1.1-pro-Ultra") else None,
-                image_prompt=image_prompt_b64 if model_family == "FLUX-1.1-pro-Ultra" else None,
-                image_prompt_strength=image_prompt_strength if model_family == "FLUX-1.1-pro-Ultra" else None,
-                raw=raw if model_family == "FLUX-1.1-pro-Ultra" else None,
-                width=width if model_family == "FLUX-1.1-pro" else None,
-                height=height if model_family == "FLUX-1.1-pro" else None,
-                aspect_ratio=aspect_ratio if "FLUX.1-Kontext" in model_family else None,
+                input_image=input_image_b64 if params.get("input_image", False) else None,
+                negative_prompt=negative_prompt if params.get("negative_prompt", False) else "",
+                num_inference_steps=num_steps if params.get("num_inference_steps", False) else None,
+                guidance_scale=guidance_scale if params.get("guidance_scale", False) else None,
+                cfg=cfg if params.get("cfg", False) else None,
+                output_format=output_format if params.get("output_format", False) else None,
+                prompt_enhancement=prompt_enhancement if params.get("prompt_enhancement", False) else None,
+                prompt_upsampling=prompt_upsampling if params.get("prompt_upsampling", False) else None,
+                safety_tolerance=safety_tolerance if params.get("safety_tolerance", False) else None,
+                width=width if params.get("width_height", False) else None,
+                height=height if params.get("width_height", False) else None,
+                aspect_ratio=aspect_ratio if params.get("aspect_ratio", False) else None,
+                image_prompt=image_prompt_b64 if params.get("image_prompt", False) else None,
+                image_prompt_strength=image_prompt_strength if params.get("image_prompt_strength", False) else None,
+                raw=raw if params.get("raw", False) else None,
             )
         except Exception as e:
             raise RuntimeError(f"[SiliconFlow] Inference error: {e}") from e
@@ -295,9 +533,9 @@ class SiliconFlowInference:
 
 # Node registration
 NODE_CLASS_MAPPINGS = {
-    "SiliconFlowInference": SiliconFlowInference,
+    "SiliconFlowImageGeneration": SiliconFlowImageGeneration,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SiliconFlowInference": "🎨 SiliconFlow — Image Generation",
+    "SiliconFlowImageGeneration": "🎨 SiliconFlow — Image Generation",
 }

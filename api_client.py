@@ -17,11 +17,11 @@ from typing import Optional
 
 from .config import get_api_key, SILICONFLOW_BASE_URL
 
-# Cache modelli: (timestamp, lista_modelli)
+# Model cache: (timestamp, model_list)
 _model_cache: tuple[float, list[str]] | None = None
-CACHE_TTL_SECONDS = 300  # 5 minuti
+CACHE_TTL_SECONDS = 300  # 5 minutes
 
-# Task type SiliconFlow che corrispondono a generazione immagini
+# SiliconFlow task types that correspond to image generation
 IMAGE_GENERATION_TASK_TYPES = {
     "text2image",
     "image2image",
@@ -29,7 +29,7 @@ IMAGE_GENERATION_TASK_TYPES = {
     "image-editing",
 }
 
-# Prefissi noti di modelli image generation come fallback
+# Known image generation model prefixes as fallback
 IMAGE_MODEL_PREFIXES = (
     "black-forest-labs/",
     "stabilityai/",
@@ -50,7 +50,7 @@ def _make_request(
     payload: Optional[dict] = None,
     timeout: int = 120,
 ) -> dict:
-    """Esegue una richiesta HTTP autenticata alle API SiliconFlow."""
+    """Executes an authenticated HTTP request to SiliconFlow APIs."""
     api_key = get_api_key()
     url = f"{SILICONFLOW_BASE_URL}{endpoint}"
 
@@ -69,32 +69,32 @@ def _make_request(
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(
-            f"[SiliconFlow] Errore HTTP {e.code} su {endpoint}:\n{body}"
+            f"[SiliconFlow] HTTP Error {e.code} on {endpoint}:\n{body}"
         ) from e
     except urllib.error.URLError as e:
         raise RuntimeError(
-            f"[SiliconFlow] Errore di rete su {endpoint}: {e.reason}"
+            f"[SiliconFlow] Network error on {endpoint}: {e.reason}"
         ) from e
 
 
 def _is_image_model(model: dict) -> bool:
     """
-    Determina se un modello è per generazione immagini.
-    Usa il campo 'supportedGenerationMethods' o 'task_type' se disponibile,
-    altrimenti si basa su euristiche sul nome.
+    Determines if a model is for image generation.
+    Uses the 'supportedGenerationMethods' or 'task_type' field if available,
+    otherwise relies on heuristics on the name.
     """
-    # Controllo task_type diretto
+    # Check direct task_type
     task_type = model.get("task_type", "") or ""
     if task_type.lower() in {t.lower() for t in IMAGE_GENERATION_TASK_TYPES}:
         return True
 
-    # Controllo array supportedGenerationMethods
+    # Check supportedGenerationMethods array
     supported = model.get("supportedGenerationMethods", []) or []
     for method in supported:
         if any(img_task in str(method).lower() for img_task in ("image", "inpaint")):
             return True
 
-    # Fallback: euristiche sul model id
+    # Fallback: heuristics on model id
     model_id = model.get("id", "") or ""
     if any(model_id.lower().startswith(p.lower()) for p in IMAGE_MODEL_PREFIXES):
         return True
@@ -109,11 +109,11 @@ def _is_image_model(model: dict) -> bool:
 
 def fetch_image_models(force_refresh: bool = False) -> list[str]:
     """
-    Recupera e filtra i modelli di image generation da SiliconFlow.
-    Usa una cache con TTL per ridurre le chiamate API.
+    Retrieves and filters image generation models from SiliconFlow.
+    Uses a cache with TTL to reduce API calls.
 
     Returns:
-        Lista ordinata di model ID per image generation.
+        Sorted list of model IDs for image generation.
     """
     global _model_cache
 
@@ -135,7 +135,7 @@ def fetch_image_models(force_refresh: bool = False) -> list[str]:
                 timeout=30,
             )
         except Exception:
-            # Se la paginazione non è supportata, prova senza parametri
+            # If pagination is not supported, try without parameters
             resp = _make_request("GET", "/models", timeout=30)
             raw = resp.get("data", resp.get("models", []))
             all_models.extend(raw)
@@ -146,22 +146,22 @@ def fetch_image_models(force_refresh: bool = False) -> list[str]:
             break
         all_models.extend(raw)
 
-        # Controlla se ci sono altre pagine
+        # Check if there are more pages
         total = resp.get("total", 0)
         if len(all_models) >= total or len(raw) < page_size:
             break
         page += 1
 
-    # Filtra solo modelli image generation
+    # Filter only image generation models
     image_models = [
         m["id"] for m in all_models if isinstance(m, dict) and _is_image_model(m) and m.get("id")
     ]
 
-    # Deduplica e ordina
+    # Deduplicate and sort
     image_models = sorted(set(image_models))
 
     if not image_models:
-        # Fallback hardcoded se l'API non restituisce nulla di utile
+        # Hardcoded fallback if the API returns nothing useful
         image_models = [
             "black-forest-labs/FLUX.1-dev",
             "black-forest-labs/FLUX.1-schnell",
@@ -227,12 +227,12 @@ def run_inference(
         "prompt": prompt,
     }
 
-    # Add parameters only if they are set
+    # Add parameters only if they are set (not None/empty)
     if image_size:
         payload["image_size"] = image_size
-    if num_inference_steps:
+    if num_inference_steps is not None:
         payload["num_inference_steps"] = num_inference_steps
-    if guidance_scale:
+    if guidance_scale is not None:
         payload["guidance_scale"] = guidance_scale
     if negative_prompt:
         payload["negative_prompt"] = negative_prompt
@@ -261,44 +261,48 @@ def run_inference(
     if aspect_ratio:
         payload["aspect_ratio"] = aspect_ratio
 
-    # Handle input image
+    # Handle input image - API uses "image" for some models, "input_image" for others
     if input_image:
-        payload["image"] = f"data:image/png;base64,{input_image}"
+        # Check if this is a FLUX.1-Kontext model (uses input_image)
+        if "flux.1-kontext" in model.lower() and "dev" not in model.lower():
+            payload["input_image"] = f"data:image/png;base64,{input_image}"
+        else:
+            payload["image"] = f"data:image/png;base64,{input_image}"
 
     resp = _make_request("POST", "/images/generations", payload=payload, timeout=120)
 
-    # Estrai l'immagine dalla risposta
+    # Extract image from response
     images_data = resp.get("images", [])
     if not images_data:
         raise RuntimeError(
-            f"[SiliconFlow] Nessuna immagine nella risposta: {resp}"
+            f"[SiliconFlow] No image in response: {resp}"
         )
 
     first = images_data[0]
 
-    # La risposta può essere base64 o URL
+    # Response can be base64 or URL
     if isinstance(first, dict):
         if "b64_json" in first:
             return base64.b64decode(first["b64_json"])
         elif "url" in first:
             return _download_image(first["url"])
         else:
-            raise RuntimeError(f"[SiliconFlow] Formato risposta immagine sconosciuto: {first}")
+            raise RuntimeError(f"[SiliconFlow] Unknown image response format: {first}")
     elif isinstance(first, str):
-        # Stringa diretta: potrebbe essere base64 o URL
+        # Direct string: could be base64 or URL
         if first.startswith("http"):
             return _download_image(first)
         else:
             return base64.b64decode(first)
     else:
-        raise RuntimeError(f"[SiliconFlow] Tipo risposta inatteso: {type(first)}")
+        raise RuntimeError(f"[SiliconFlow] Unexpected response type: {type(first)}")
 
 
 def _download_image(url: str) -> bytes:
-    """Scarica un'immagine da URL e restituisce i bytes."""
+    """Downloads an image from URL and returns the bytes."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "ComfyUI-SiliconFlow/1.0"})
         with urllib.request.urlopen(req, timeout=60) as resp:
             return resp.read()
     except Exception as e:
-        raise RuntimeError(f"[SiliconFlow] Errore download immagine da {url}: {e}") from e
+        raise RuntimeError(f"[SiliconFlow] Error downloading image from {url}: {e}") from e

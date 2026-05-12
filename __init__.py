@@ -9,31 +9,15 @@ Project structure:
   ├── __init__.py              ← this file
   ├── config.py                ← API key management
   ├── api_client.py            ← SiliconFlow HTTP client
-  ├── node_model_selector.py   ← model selection node
-  ├── node_inference.py        ← image inference node
+  ├── node_inference.py        ← unified image generation node
   ├── apikey.txt               ← API key (DO NOT include in workflows!)
   └── .gitignore               ← excludes apikey.txt from git
 """
 
-from .node_model_selector import (
-    NODE_CLASS_MAPPINGS as _MODEL_SELECTOR_CLASSES,
-    NODE_DISPLAY_NAME_MAPPINGS as _MODEL_SELECTOR_NAMES,
-)
 from .node_inference import (
-    NODE_CLASS_MAPPINGS as _INFERENCE_CLASSES,
-    NODE_DISPLAY_NAME_MAPPINGS as _INFERENCE_NAMES,
+    NODE_CLASS_MAPPINGS,
+    NODE_DISPLAY_NAME_MAPPINGS,
 )
-
-# Merge all mappings — add new nodes here in the future
-NODE_CLASS_MAPPINGS = {
-    **_MODEL_SELECTOR_CLASSES,
-    **_INFERENCE_CLASSES,
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    **_MODEL_SELECTOR_NAMES,
-    **_INFERENCE_NAMES,
-}
 
 # Package metadata (optional but useful for ComfyUI Manager)
 WEB_DIRECTORY = None  # no JS/CSS frontend assets
