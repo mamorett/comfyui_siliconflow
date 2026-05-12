@@ -1,8 +1,8 @@
 """
-node_model_selector.py — Nodo ComfyUI per selezionare il modello SiliconFlow.
+node_model_selector.py — ComfyUI node for selecting the SiliconFlow model.
 
-Recupera dinamicamente la lista dei modelli di image generation
-tramite API e la presenta come dropdown.
+Dynamically retrieves the list of image generation models
+via API and presents it as a dropdown.
 """
 
 from .api_client import fetch_image_models
@@ -10,10 +10,10 @@ from .api_client import fetch_image_models
 
 class SiliconFlowModelSelector:
     """
-    Nodo che espone un dropdown con i modelli SiliconFlow
-    disponibili per la generazione di immagini.
+    Node that exposes a dropdown with available SiliconFlow models
+    for image generation.
 
-    La lista viene aggiornata dinamicamente dalle API.
+    The list is dynamically updated from the APIs.
     """
 
     CATEGORY = "SiliconFlow"
@@ -23,34 +23,41 @@ class SiliconFlowModelSelector:
 
     @classmethod
     def INPUT_TYPES(cls) -> dict:
-        # Recupera la lista modelli live (con cache)
+        # Retrieve live model list (with cache)
         try:
             models = fetch_image_models()
         except Exception as e:
-            print(f"[SiliconFlow] Impossibile recuperare i modelli: {e}")
-            models = ["— Errore: controlla apikey.txt —"]
+            print(f"[SiliconFlow] Unable to retrieve models: {e}")
+            models = ["— Error: check apikey.txt —"]
 
         return {
             "required": {
                 "model": (models, {"default": models[0] if models else ""}),
             },
             "optional": {
-                "refresh_models": ("BOOLEAN", {"default": False, "label_on": "🔄 Refresh", "label_off": "Usa cache"}),
+                "refresh_button": ("BOOLEAN", {"default": False, "label": "🔄 Refresh Models"}),
             },
         }
 
-    def select_model(self, model: str, refresh_models: bool = False) -> tuple:
-        if refresh_models:
+    # Force re-execution when refresh_button is clicked
+    @classmethod
+    def IS_CHANGED(cls, refresh_button: bool = False, **kwargs):
+        if refresh_button:
+            return float("random")  # triggers re-execution
+        return False
+
+    def select_model(self, model: str, refresh_button: bool = False) -> tuple:
+        if refresh_button:
             try:
                 models = fetch_image_models(force_refresh=True)
-                print(f"[SiliconFlow] Lista modelli aggiornata: {len(models)} modelli trovati.")
+                print(f"[SiliconFlow] Model list updated: {len(models)} models found.")
             except Exception as e:
-                print(f"[SiliconFlow] Errore refresh modelli: {e}")
+                print(f"[SiliconFlow] Model refresh error: {e}")
 
         return (model,)
 
 
-# Registrazione nodo
+# Node registration
 NODE_CLASS_MAPPINGS = {
     "SiliconFlowModelSelector": SiliconFlowModelSelector,
 }

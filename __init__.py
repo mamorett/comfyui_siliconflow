@@ -1,18 +1,18 @@
 """
-__init__.py — Entry point del custom node SiliconFlow per ComfyUI.
+__init__.py — Entry point for SiliconFlow custom node for ComfyUI.
 
-Registra tutti i nodi disponibili e li espone a ComfyUI
-tramite le variabili standard NODE_CLASS_MAPPINGS e NODE_DISPLAY_NAME_MAPPINGS.
+Registers all available nodes and exposes them to ComfyUI
+via the standard variables NODE_CLASS_MAPPINGS and NODE_DISPLAY_NAME_MAPPINGS.
 
-Struttura del progetto:
+Project structure:
   comfyui_siliconflow/
-  ├── __init__.py              ← questo file
-  ├── config.py                ← gestione API key
-  ├── api_client.py            ← client HTTP SiliconFlow
-  ├── node_model_selector.py   ← nodo selezione modello
-  ├── node_inference.py        ← nodo inferenza immagine
-  ├── apikey.txt               ← API key (NON includere nei workflow!)
-  └── .gitignore               ← esclude apikey.txt dal git
+  ├── __init__.py              ← this file
+  ├── config.py                ← API key management
+  ├── api_client.py            ← SiliconFlow HTTP client
+  ├── node_model_selector.py   ← model selection node
+  ├── node_inference.py        ← image inference node
+  ├── apikey.txt               ← API key (DO NOT include in workflows!)
+  └── .gitignore               ← excludes apikey.txt from git
 """
 
 from .node_model_selector import (
@@ -24,7 +24,7 @@ from .node_inference import (
     NODE_DISPLAY_NAME_MAPPINGS as _INFERENCE_NAMES,
 )
 
-# Merge di tutti i mapping — aggiungi qui nuovi nodi in futuro
+# Merge all mappings — add new nodes here in the future
 NODE_CLASS_MAPPINGS = {
     **_MODEL_SELECTOR_CLASSES,
     **_INFERENCE_CLASSES,
@@ -35,12 +35,12 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **_INFERENCE_NAMES,
 }
 
-# Metadati del pacchetto (opzionali ma utili per ComfyUI Manager)
-WEB_DIRECTORY = None  # nessun asset JS/CSS frontend
+# Package metadata (optional but useful for ComfyUI Manager)
+WEB_DIRECTORY = None  # no JS/CSS frontend assets
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
 
 print(
-    f"[SiliconFlow] Custom nodes caricati: "
+    f"[SiliconFlow] Custom nodes loaded: "
     + ", ".join(NODE_DISPLAY_NAME_MAPPINGS.values())
 )

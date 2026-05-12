@@ -1,17 +1,17 @@
 """
-node_inference.py — Nodo ComfyUI per l'inferenza immagine tramite SiliconFlow.
+node_inference.py — ComfyUI node for image inference via SiliconFlow.
 
 Input:
-  - model       : stringa modello (dal nodo SiliconFlowModelSelector)
-  - prompt      : testo del prompt
-  - image_1..4  : immagini opzionali (tensori ComfyUI) per modelli edit/img2img
-  - width       : larghezza output
-  - height      : altezza output
+  - model       : model string (from SiliconFlowModelSelector node)
+  - prompt      : prompt text
+  - image_1..4  : optional images (ComfyUI tensors) for edit/img2img models
+  - width       : output width
+  - height      : output height
   - seed        : seed (−1 = random)
-  - random_seed : se True, ignora seed e usa casuale ad ogni run
+  - random_seed : if True, ignores seed and uses random value on each run
 
 Output:
-  - IMAGE        : tensore immagine ComfyUI (B,H,W,C) float32 [0,1]
+  - IMAGE        : ComfyUI image tensor (B,H,W,C) float32 [0,1]
 """
 
 import io
@@ -39,8 +39,8 @@ from .api_client import run_inference
 
 def _tensor_to_base64(tensor) -> str:
     """
-    Converte un tensore ComfyUI (B,H,W,C) float32 [0,1] in stringa base64 PNG.
-    Se ci sono più batch, usa il primo frame.
+    Converts a ComfyUI tensor (B,H,W,C) float32 [0,1] to a base64 PNG string.
+    If there are multiple batches, uses the first frame.
     """
     import base64
 
@@ -57,7 +57,7 @@ def _tensor_to_base64(tensor) -> str:
         pil_img.save(buf, format="PNG")
         return base64.b64encode(buf.getvalue()).decode("utf-8")
     else:
-        # Fallback senza PIL: PPM grezzo → base64
+        # Fallback without PIL: raw PPM → base64
         import base64 as b64mod
         h, w, c = img_array.shape
         header = f"P6\n{w} {h}\n255\n".encode()
@@ -67,14 +67,14 @@ def _tensor_to_base64(tensor) -> str:
 
 def _bytes_to_tensor(image_bytes: bytes):
     """
-    Converte bytes di immagine PNG/JPEG in tensore ComfyUI (1,H,W,C) float32 [0,1].
+    Converts PNG/JPEG image bytes to a ComfyUI tensor (1,H,W,C) float32 [0,1].
     """
     if HAS_PIL:
         pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         arr = np.array(pil_img, dtype=np.float32) / 255.0
     else:
         raise RuntimeError(
-            "[SiliconFlow] PIL non disponibile: impossibile decodificare l'immagine."
+            "[SiliconFlow] PIL not available: unable to decode the image."
         )
 
     if HAS_TORCH:
@@ -85,8 +85,8 @@ def _bytes_to_tensor(image_bytes: bytes):
 
 class SiliconFlowInference:
     """
-    Nodo di inferenza principale per SiliconFlow.
-    Supporta text-to-image e image editing (fino a 4 immagini input).
+    Main inference node for SiliconFlow.
+    Supports text-to-image and image editing (up to 4 input images).
     """
 
     CATEGORY = "SiliconFlow"
@@ -104,8 +104,8 @@ class SiliconFlowInference:
                     "STRING",
                     {
                         "multiline": True,
-                        "default": "A beautiful landscape, photorealistic, 8k",
-                        "placeholder": "Descrivi l'immagine da generare...",
+                    "default": "A beautiful landscape, photorealistic, 8k",
+                         "placeholder": "Describe the image to generate...",
                     },
                 ),
                 "width": (
@@ -122,7 +122,7 @@ class SiliconFlowInference:
                 ),
                 "random_seed": (
                     "BOOLEAN",
-                    {"default": False, "label_on": "🎲 Random", "label_off": "Fisso"},
+                    {"default": False, "label_on": "🎲 Random", "label_off": "Fixed"},
                 ),
                 "num_steps": (
                     "INT",
@@ -139,7 +139,7 @@ class SiliconFlowInference:
                     {
                         "multiline": True,
                         "default": "",
-                        "placeholder": "Elementi da evitare nell'immagine...",
+                        "placeholder": "Elements to avoid in the image...",
                     },
                 ),
                 "image_1": ("IMAGE", {}),
@@ -173,24 +173,24 @@ class SiliconFlowInference:
         image_4=None,
     ) -> tuple:
 
-        # Risolvi seed
+        # Resolve seed
         effective_seed = random.randint(0, 2**32 - 1) if random_seed else seed
-        print(f"[SiliconFlow] Generazione con seed: {effective_seed}")
+        print(f"[SiliconFlow] Generating with seed: {effective_seed}")
 
-        # Raccogli le immagini input opzionali
+        # Collect optional input images
         input_images_b64 = []
         for idx, img_tensor in enumerate([image_1, image_2, image_3, image_4], start=1):
             if img_tensor is not None:
                 try:
                     b64 = _tensor_to_base64(img_tensor)
                     input_images_b64.append(b64)
-                    print(f"[SiliconFlow] Immagine {idx} convertita in base64.")
+                    print(f"[SiliconFlow] Image {idx} converted to base64.")
                 except Exception as e:
-                    print(f"[SiliconFlow] Errore conversione immagine {idx}: {e}")
+                    print(f"[SiliconFlow] Image {idx} conversion error: {e}")
 
         print(
-            f"[SiliconFlow] Avvio inferenza — modello: {model} | "
-            f"size: {width}x{height} | immagini input: {len(input_images_b64)}"
+            f"[SiliconFlow] Starting inference — model: {model} | "
+            f"size: {width}x{height} | input images: {len(input_images_b64)}"
         )
 
         try:
@@ -206,16 +206,16 @@ class SiliconFlowInference:
                 guidance_scale=guidance_scale,
             )
         except Exception as e:
-            raise RuntimeError(f"[SiliconFlow] Errore inferenza: {e}") from e
+            raise RuntimeError(f"[SiliconFlow] Inference error: {e}") from e
 
-        # Converti bytes → tensore ComfyUI
+        # Convert bytes → ComfyUI tensor
         output_tensor = _bytes_to_tensor(image_bytes)
-        print(f"[SiliconFlow] ✅ Immagine generata con successo! Shape: {output_tensor.shape}")
+        print(f"[SiliconFlow] ✅ Image generated successfully! Shape: {output_tensor.shape}")
 
         return (output_tensor,)
 
 
-# Registrazione nodo
+# Node registration
 NODE_CLASS_MAPPINGS = {
     "SiliconFlowInference": SiliconFlowInference,
 }

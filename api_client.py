@@ -40,6 +40,7 @@ IMAGE_MODEL_PREFIXES = (
     "stable-diffusion",
     "sd-",
     "sdxl",
+    "Image",
 )
 
 

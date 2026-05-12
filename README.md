@@ -1,96 +1,96 @@
 # ComfyUI — SiliconFlow Custom Nodes
 
-Nodi ComfyUI per generare immagini tramite le API di **SiliconFlow**.
+ComfyUI nodes for generating images via **SiliconFlow** APIs.
 
-## Struttura
+## Structure
 
 ```
 comfyui_siliconflow/
-├── __init__.py              # Entry point e registrazione nodi
-├── config.py                # Gestione API key
-├── api_client.py            # Client HTTP SiliconFlow
-├── node_model_selector.py   # Nodo: selezione modello
-├── node_inference.py        # Nodo: generazione immagine
-├── apikey.txt               # ← API key (NON condividere!)
-└── .gitignore               # Esclude apikey.txt dal repository
+├── __init__.py              # Entry point and node registration
+├── config.py                # API key management
+├── api_client.py            # SiliconFlow HTTP client
+├── node_model_selector.py   # Node: model selection
+├── node_inference.py        # Node: image generation
+├── apikey.txt               # ← API key (DO NOT share!)
+└── .gitignore               # Excludes apikey.txt from repository
 ```
 
-## Installazione
+## Installation
 
-1. **Copia la cartella** nella directory dei custom nodes di ComfyUI:
+1. **Copy the folder** to the ComfyUI custom nodes directory:
    ```
    ComfyUI/custom_nodes/comfyui_siliconflow/
    ```
 
-2. **Inserisci la tua API key** nel file `apikey.txt`:
+2. **Insert your API key** into the `apikey.txt` file:
    ```
    sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
-   > ⚠️ Non condividere mai questo file. È escluso automaticamente da `.gitignore`.
+   > ⚠️ Never share this file. It is automatically excluded by `.gitignore`.
 
-3. **Riavvia ComfyUI**. I nodi appariranno nella categoria **SiliconFlow**.
+3. **Restart ComfyUI**. The nodes will appear in the **SiliconFlow** category.
 
-## Nodi disponibili
+## Available Nodes
 
 ### 🤖 SiliconFlow — Model Selector
 
-Recupera dinamicamente la lista dei modelli di image generation da SiliconFlow e la presenta come dropdown.
+Dynamically retrieves the list of image generation models from SiliconFlow and presents it as a dropdown.
 
-| Input | Tipo | Descrizione |
+| Input | Type | Description |
 |-------|------|-------------|
-| `model` | Dropdown | Modello selezionato |
-| `refresh_models` | Boolean | Forza aggiornamento lista |
+| `model` | Dropdown | Selected model |
+| `refresh_models` | Boolean | Force list refresh |
 
-| Output | Tipo | Descrizione |
+| Output | Type | Description |
 |--------|------|-------------|
-| `model` | SFMODEL | ID modello da passare al nodo inferenza |
+| `model` | SFMODEL | Model ID to pass to the inference node |
 
 ---
 
 ### 🎨 SiliconFlow — Image Generation
 
-Nodo di inferenza principale. Supporta text-to-image e image editing.
+Main inference node. Supports text-to-image and image editing.
 
-| Input | Tipo | Obbligatorio | Descrizione |
+| Input | Type | Required | Description |
 |-------|------|:---:|-------------|
-| `model` | SFMODEL | ✅ | Modello dal nodo selector |
-| `prompt` | String | ✅ | Testo del prompt |
-| `width` | Int | ✅ | Larghezza output (256–2048) |
-| `height` | Int | ✅ | Altezza output (256–2048) |
-| `seed` | Int | ✅ | Seed per la generazione |
-| `random_seed` | Boolean | ✅ | Se attivo, usa seed casuale |
-| `num_steps` | Int | ✅ | Passi di diffusione (1–100) |
-| `guidance_scale` | Float | ✅ | Scala CFG (0–20) |
-| `negative_prompt` | String | ❌ | Elementi da evitare |
-| `image_1` | IMAGE | ❌ | Immagine input 1 (edit/img2img) |
-| `image_2` | IMAGE | ❌ | Immagine input 2 |
-| `image_3` | IMAGE | ❌ | Immagine input 3 |
-| `image_4` | IMAGE | ❌ | Immagine input 4 |
+| `model` | SFMODEL | ✅ | Model from the selector node |
+| `prompt` | String | ✅ | Prompt text |
+| `width` | Int | ✅ | Output width (256–2048) |
+| `height` | Int | ✅ | Output height (256–2048) |
+| `seed` | Int | ✅ | Seed for generation |
+| `random_seed` | Boolean | ✅ | If enabled, uses random seed |
+| `num_steps` | Int | ✅ | Diffusion steps (1–100) |
+| `guidance_scale` | Float | ✅ | CFG scale (0–20) |
+| `negative_prompt` | String | ❌ | Elements to avoid |
+| `image_1` | IMAGE | ❌ | Input image 1 (edit/img2img) |
+| `image_2` | IMAGE | ❌ | Input image 2 |
+| `image_3` | IMAGE | ❌ | Input image 3 |
+| `image_4` | IMAGE | ❌ | Input image 4 |
 
-| Output | Tipo | Descrizione |
+| Output | Type | Description |
 |--------|------|-------------|
-| `image` | IMAGE | Immagine generata (tensore ComfyUI) |
+| `image` | IMAGE | Generated image (ComfyUI tensor) |
 
-## Workflow di esempio
+## Example Workflow
 
 ```
 [SiliconFlow Model Selector] → model
-                                    ↘
-[Load Image (opz.)] → image_1   [SiliconFlow Inference] → image → [Preview Image]
-                                    ↗
-                 prompt, width, height, seed...
+                                     ↘
+[Load Image (opt.)] → image_1   [SiliconFlow Inference] → image → [Preview Image]
+                                     ↗
+                  prompt, width, height, seed...
 ```
 
-## Note
+## Notes
 
-- La **lista modelli** viene cachata per 5 minuti per ridurre le chiamate API.
-- Con `random_seed = True`, ogni esecuzione produce un risultato diverso.
-- Le immagini input (image_1–4) sono **opzionali**: se omesse, il nodo funziona in modalità text-to-image pura.
-- La compatibilità con modelli edit/img2img dipende dal supporto del modello specifico su SiliconFlow.
+- The **model list** is cached for 5 minutes to reduce API calls.
+- With `random_seed = True`, each execution produces a different result.
+- Input images (image_1–4) are **optional**: if omitted, the node works in pure text-to-image mode.
+- Compatibility with edit/img2img models depends on the specific model's support on SiliconFlow.
 
-## Requisiti
+## Requirements
 
-- ComfyUI (qualsiasi versione recente)
+- ComfyUI (any recent version)
 - Python 3.8+
-- `Pillow` (PIL) — già incluso in ComfyUI
-- Nessuna dipendenza esterna aggiuntiva
+- `Pillow` (PIL) — already included in ComfyUI
+- No additional external dependencies
