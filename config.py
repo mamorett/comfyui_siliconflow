@@ -11,7 +11,7 @@ import os
 NODE_DIR = os.path.dirname(os.path.abspath(__file__))
 APIKEY_FILE = os.path.join(NODE_DIR, "apikey.txt")
 
-SILICONFLOW_BASE_URL = "https://api.siliconflow.cn/v1"
+SILICONFLOW_BASE_URL = "https://api.siliconflow.com/v1"
 
 
 def get_api_key() -> str:
