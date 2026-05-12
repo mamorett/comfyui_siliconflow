@@ -1,10 +1,10 @@
 """
-api_client.py — Client HTTP per le API SiliconFlow.
+api_client.py — HTTP client for SiliconFlow APIs.
 
-Gestisce:
-- Recupero lista modelli (filtrati per image generation)
-- Inferenza immagine (text-to-image e image editing)
-- Cache della lista modelli per evitare chiamate ripetute
+Handles:
+- Model list retrieval (filtered for image generation)
+- Image inference (text-to-image and image editing)
+- Model list caching to avoid repeated API calls
 """
 
 import base64
@@ -177,53 +177,93 @@ def fetch_image_models(force_refresh: bool = False) -> list[str]:
 def run_inference(
     model: str,
     prompt: str,
-    width: int = 1024,
-    height: int = 1024,
+    image_size: str = "1024x1024",
     seed: int = -1,
-    input_images: Optional[list[str]] = None,  # lista di base64 strings
+    input_image: Optional[str] = None,  # single base64 string
     negative_prompt: str = "",
     num_inference_steps: int = 20,
     guidance_scale: float = 7.5,
+    cfg: Optional[float] = None,
+    output_format: str = "png",
+    prompt_upsampling: Optional[bool] = None,
+    prompt_enhancement: Optional[bool] = None,
+    safety_tolerance: Optional[int] = None,
+    image_prompt: Optional[str] = None,
+    image_prompt_strength: Optional[float] = None,
+    raw: Optional[bool] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    aspect_ratio: Optional[str] = None,
 ) -> bytes:
     """
-    Esegue l'inferenza immagine tramite SiliconFlow.
+    Executes image inference via SiliconFlow.
 
     Args:
-        model: ID del modello da usare.
-        prompt: Testo del prompt.
-        width: Larghezza output in pixel.
-        height: Altezza output in pixel.
-        seed: Seed per la generazione (-1 = random).
-        input_images: Lista di immagini in base64 (per modelli edit/img2img).
-        negative_prompt: Prompt negativo (opzionale).
-        num_inference_steps: Passi di diffusione.
-        guidance_scale: Scala di guida CFG.
+        model: Model ID to use.
+        prompt: Prompt text.
+        image_size: Image size as "widthxheight" string.
+        seed: Seed for generation (-1 = random).
+        input_image: Single base64 image (for edit/img2img models).
+        negative_prompt: Negative prompt (optional).
+        num_inference_steps: Diffusion steps.
+        guidance_scale: CFG guidance scale.
+        cfg: CFG scale (for FLUX.2-flex and Qwen-Image models).
+        output_format: Output format (png/jpeg).
+        prompt_upsampling: Whether to upsample the prompt (FLUX.1-Kontext, FLUX-1.1-pro).
+        prompt_enhancement: Prompt enhancement switch (FLUX.1-schnell, FLUX.1-dev).
+        safety_tolerance: Tolerance level 0-6 (FLUX.1-Kontext, FLUX-1.1-pro).
+        image_prompt: Base64 image prompt (FLUX-1.1-pro-Ultra).
+        image_prompt_strength: Blend strength 0-1 (FLUX-1.1-pro-Ultra).
+        raw: Generate less processed images (FLUX-1.1-pro-Ultra).
+        width: Width in pixels (for FLUX-1.1-pro).
+        height: Height in pixels (for FLUX-1.1-pro).
+        aspect_ratio: Aspect ratio string (for FLUX.1-Kontext).
 
     Returns:
-        Bytes dell'immagine PNG/JPEG generata.
+        Bytes of the generated PNG/JPEG image.
     """
     payload: dict = {
         "model": model,
         "prompt": prompt,
-        "image_size": f"{width}x{height}",
-        "num_inference_steps": num_inference_steps,
-        "guidance_scale": guidance_scale,
     }
 
+    # Add parameters only if they are set
+    if image_size:
+        payload["image_size"] = image_size
+    if num_inference_steps:
+        payload["num_inference_steps"] = num_inference_steps
+    if guidance_scale:
+        payload["guidance_scale"] = guidance_scale
     if negative_prompt:
         payload["negative_prompt"] = negative_prompt
-
     if seed >= 0:
         payload["seed"] = seed
+    if cfg is not None:
+        payload["cfg"] = cfg
+    if output_format:
+        payload["output_format"] = output_format
+    if prompt_upsampling is not None:
+        payload["prompt_upsampling"] = prompt_upsampling
+    if prompt_enhancement is not None:
+        payload["prompt_enhancement"] = prompt_enhancement
+    if safety_tolerance is not None:
+        payload["safety_tolerance"] = safety_tolerance
+    if image_prompt:
+        payload["image_prompt"] = f"data:image/png;base64,{image_prompt}"
+    if image_prompt_strength is not None:
+        payload["image_prompt_strength"] = image_prompt_strength
+    if raw is not None:
+        payload["raw"] = raw
+    if width is not None:
+        payload["width"] = width
+    if height is not None:
+        payload["height"] = height
+    if aspect_ratio:
+        payload["aspect_ratio"] = aspect_ratio
 
-    # Se sono presenti immagini input, usale per editing/img2img
-    if input_images:
-        if len(input_images) == 1:
-            payload["image"] = f"data:image/png;base64,{input_images[0]}"
-        else:
-            payload["images"] = [
-                f"data:image/png;base64,{img}" for img in input_images
-            ]
+    # Handle input image
+    if input_image:
+        payload["image"] = f"data:image/png;base64,{input_image}"
 
     resp = _make_request("POST", "/images/generations", payload=payload, timeout=120)
 
