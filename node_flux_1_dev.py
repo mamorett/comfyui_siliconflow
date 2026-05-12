@@ -8,14 +8,14 @@ class SiliconFlowFlux1Dev(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX.1-dev"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image_size": (["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"], {"default": "1024x1024"}),
-                "num_inference_steps": ("INT", {"default": 20, "min": 1, "max": 30}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "FLUX.1 Dev model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Description."}),
+                "image_size": (["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"], {"default": "1024x1024", "tooltip": "Size presets (max 2.3M pixels)."}),
+                "num_inference_steps": ("INT", {"default": 20, "min": 1, "max": 30, "tooltip": "Inference steps (1-30)."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "prompt_enhancement": ("BOOLEAN", {"default": False}),
+                "prompt_enhancement": ("BOOLEAN", {"default": False, "tooltip": "Detail-optimized prompt."}),
             }
         }
 

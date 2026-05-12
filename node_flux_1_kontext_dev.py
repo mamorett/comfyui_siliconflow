@@ -9,13 +9,13 @@ class SiliconFlowFlux1KontextDev(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX.1-Kontext-dev"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image": ("IMAGE", {}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "FLUX.1 Kontext Dev model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Text prompt."}),
+                "image": ("IMAGE", {"tooltip": "REQUIRED: Input image."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "prompt_enhancement": ("BOOLEAN", {"default": False}),
+                "prompt_enhancement": ("BOOLEAN", {"default": False, "tooltip": "Optimizes prompt to be more detailed and model-friendly."}),
             }
         }
 

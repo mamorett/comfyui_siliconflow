@@ -157,9 +157,10 @@ def run_inference(
     model: str,
     prompt: str,
     **kwargs
-) -> list[bytes]:
+) -> tuple[list[bytes], int]:
     """
     Executes image inference via SiliconFlow.
+    Returns (list of image bytes, seed used).
     """
     payload: dict = {
         "model": model,
@@ -197,7 +198,10 @@ def run_inference(
             else:
                 results.append(base64.b64decode(item))
     
-    return results
+    # Extract seed from response
+    actual_seed = resp.get("seed", kwargs.get("seed", 0))
+    
+    return results, actual_seed
 
 
 def _download_image(url: str) -> bytes:

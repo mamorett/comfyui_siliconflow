@@ -8,11 +8,11 @@ class SiliconFlowFlux2Pro(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX.2-pro"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image_size": (["512x512", "768x1024", "1024x768", "576x1024", "1024x576"], {"default": "512x512"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
-                "output_format": (["png", "jpeg"], {"default": "png"}),
+                "model": (models, {"default": models[0], "tooltip": "Black Forest Labs FLUX.2 Pro model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Text description of the image to generate."}),
+                "image_size": (["512x512", "768x1024", "1024x768", "576x1024", "1024x576"], {"default": "512x512", "tooltip": "Supported resolution presets for FLUX.2 Pro."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed. If the API returns a different seed, it will be output from the node."}),
+                "output_format": (["png", "jpeg"], {"default": "png", "tooltip": "Final image file format."}),
             }
         }
 

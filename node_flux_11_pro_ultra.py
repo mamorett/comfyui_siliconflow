@@ -9,20 +9,20 @@ class SiliconFlowFlux11ProUltra(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX-1.1-pro-Ultra"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image_size": (["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"], {"default": "1024x1024"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "FLUX-1.1 Pro Ultra model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Description."}),
+                "image_size": (["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"], {"default": "1024x1024", "tooltip": "Supported resolution presets."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "negative_prompt": ("STRING", {"multiline": True}),
-                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4}),
-                "aspect_ratio": ("STRING", {"default": "1:1"}),
-                "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6}),
-                "output_format": (["png", "jpeg"], {"default": "png"}),
-                "raw": ("BOOLEAN", {"default": False}),
-                "image_prompt": ("IMAGE", {}),
-                "image_prompt_strength": ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.1}),
+                "negative_prompt": ("STRING", {"multiline": True, "tooltip": "Negative prompt."}),
+                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4, "tooltip": "Batch generation size (max 4)."}),
+                "aspect_ratio": ("STRING", {"default": "1:1", "tooltip": "Aspect ratio between 21:9 and 9:21."}),
+                "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6, "tooltip": "Filter strictness (0-6)."}),
+                "output_format": (["png", "jpeg"], {"default": "png", "tooltip": "Image format."}),
+                "raw": ("BOOLEAN", {"default": False, "tooltip": "Generate less processed, more natural-looking images."}),
+                "image_prompt": ("IMAGE", {"tooltip": "Image to remix in base64 format."}),
+                "image_prompt_strength": ("FLOAT", {"default": 0.1, "min": 0, "max": 1, "step": 0.1, "tooltip": "Blend strength between text and image prompt."}),
             }
         }
 

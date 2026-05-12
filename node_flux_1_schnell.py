@@ -8,13 +8,13 @@ class SiliconFlowFlux1Schnell(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX.1-schnell"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image_size": (["1024x1024", "512x1024", "768x512", "768x1024", "1024x576", "576x1024"], {"default": "1024x1024"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "FLUX.1 Schnell model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Image prompt."}),
+                "image_size": (["1024x1024", "512x1024", "768x512", "768x1024", "1024x576", "576x1024"], {"default": "1024x1024", "tooltip": "Size presets."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "prompt_enhancement": ("BOOLEAN", {"default": False}),
+                "prompt_enhancement": ("BOOLEAN", {"default": False, "tooltip": "Detail-optimized prompt."}),
             }
         }
 

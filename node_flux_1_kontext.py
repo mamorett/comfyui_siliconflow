@@ -9,16 +9,16 @@ class SiliconFlowFlux1Kontext(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX.1-Kontext-max", "black-forest-labs/FLUX.1-Kontext-pro"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image": ("IMAGE", {}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "FLUX.1 Kontext model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Text prompt."}),
+                "image": ("IMAGE", {"tooltip": "REQUIRED: Input image for Kontext model."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "aspect_ratio": ("STRING", {"default": "1:1"}),
-                "output_format": (["png", "jpeg"], {"default": "png"}),
-                "prompt_upsampling": ("BOOLEAN", {"default": False}),
-                "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6}),
+                "aspect_ratio": ("STRING", {"default": "1:1", "tooltip": "Aspect ratio between 21:9 and 9:21."}),
+                "output_format": (["png", "jpeg"], {"default": "png", "tooltip": "Output format."}),
+                "prompt_upsampling": ("BOOLEAN", {"default": False, "tooltip": "Automatically modifies prompt for more creative results."}),
+                "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6, "tooltip": "Filter strictness (0: strictest, 6: most lenient). Img2Img capped at 2."}),
             }
         }
 

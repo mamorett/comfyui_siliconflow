@@ -8,13 +8,13 @@ class SiliconFlowZImage(SiliconFlowBaseNode):
         if not models: models = ["Tongyi-MAI/Z-Image-Turbo"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image_size": (["512x512", "768x1024", "1024x576", "576x1024"], {"default": "512x512"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "Z-Image-Turbo model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Image description."}),
+                "image_size": (["512x512", "768x1024", "1024x576", "576x1024"], {"default": "512x512", "tooltip": "Z-Image optimized resolutions."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "negative_prompt": ("STRING", {"multiline": True}),
+                "negative_prompt": ("STRING", {"multiline": True, "tooltip": "Elements to exclude."}),
             }
         }
 

@@ -9,17 +9,17 @@ class SiliconFlowFlux11Pro(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX-1.1-pro"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "width": ("INT", {"default": 1024, "min": 256, "max": 1440, "step": 32}),
-                "height": ("INT", {"default": 768, "min": 256, "max": 1440, "step": 32}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "FLUX-1.1 Pro model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Description."}),
+                "width": ("INT", {"default": 1024, "min": 256, "max": 1440, "step": 32, "tooltip": "Image width (multiple of 32)."}),
+                "height": ("INT", {"default": 768, "min": 256, "max": 1440, "step": 32, "tooltip": "Image height (multiple of 32)."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "image_prompt": ("IMAGE", {}),
-                "prompt_upsampling": ("BOOLEAN", {"default": False}),
-                "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6}),
-                "output_format": (["png", "jpeg"], {"default": "png"}),
+                "image_prompt": ("IMAGE", {"tooltip": "Visual prompt for image-guided generation."}),
+                "prompt_upsampling": ("BOOLEAN", {"default": False, "tooltip": "Creative prompt expansion."}),
+                "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6, "tooltip": "Filter strictness (0-6)."}),
+                "output_format": (["png", "jpeg"], {"default": "png", "tooltip": "Image format."}),
             }
         }
 

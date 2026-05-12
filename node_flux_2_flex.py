@@ -8,15 +8,15 @@ class SiliconFlowFlux2Flex(SiliconFlowBaseNode):
         if not models: models = ["black-forest-labs/FLUX.2-flex"]
         return {
             "required": {
-                "model": (models, {"default": models[0]}),
-                "prompt": ("STRING", {"multiline": True}),
-                "image_size": (["512x512", "768x1024", "1024x768", "576x1024", "1024x576"], {"default": "512x512"}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999}),
+                "model": (models, {"default": models[0], "tooltip": "Black Forest Labs FLUX.2 Flex model ID."}),
+                "prompt": ("STRING", {"multiline": True, "tooltip": "Text description of the image."}),
+                "image_size": (["512x512", "768x1024", "1024x768", "576x1024", "1024x576"], {"default": "512x512", "tooltip": "Supported resolution presets."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
             },
             "optional": {
-                "num_inference_steps": ("INT", {"default": 25, "min": 1, "max": 50}),
-                "cfg": ("FLOAT", {"default": 4.0, "min": 0.1, "max": 20.0}),
-                "output_format": (["png", "jpeg"], {"default": "png"}),
+                "num_inference_steps": ("INT", {"default": 25, "min": 1, "max": 50, "tooltip": "Number of denoising steps. More steps = higher quality, slower generation."}),
+                "cfg": ("FLOAT", {"default": 4.0, "min": 0.1, "max": 20.0, "tooltip": "Classifier-Free Guidance. Recommendation: 4.0 for text generation."}),
+                "output_format": (["png", "jpeg"], {"default": "png", "tooltip": "Final image format."}),
             }
         }
 

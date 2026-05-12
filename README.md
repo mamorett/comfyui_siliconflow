@@ -1,135 +1,144 @@
 # 🎨 ComfyUI SiliconFlow Specialized Nodes
 
-A production-grade collection of specialized ComfyUI nodes for the [SiliconFlow](https://siliconflow.cn/) Image Generation API. 
+A production-grade collection of specialized ComfyUI nodes for the [SiliconFlow](https://siliconflow.cn/) Image Generation API.
 
-Unlike generic implementations, this extension provides **granular nodes** for every major model variant in the SiliconFlow documentation. Each node is surgically tailored to expose **only** the parameters supported by that specific model, eliminating UI clutter and "total chaos."
+This extension provides **granular nodes** for every major model variant in the SiliconFlow documentation. Each node is surgically tailored to expose **every single parameter** supported by that specific model, ensuring full control without UI clutter.
 
 ---
 
 ## 🚀 Key Features
 
-- **Strict Documentation Adherence**: Every parameter, enum, and default is pulled directly from the SiliconFlow OpenAPI specification.
-- **Zero UI Clutter**: Irrelevant parameters are physically hidden by using separate nodes for different model families.
-- **Batch Processing**: Native ComfyUI batch support (returns B,H,W,C tensors) for models supporting multiple outputs.
-- **Secure Key Management**: API keys are stored locally in `apikey.txt` and never embedded in your workflow files.
-- **No Dependencies**: Pure Python implementation using standard ComfyUI primitives.
+- **Exhaustive Control**: Every mandatory and optional parameter from the SiliconFlow API is exposed.
+- **Zero UI Clutter**: Parameters irrelevant to a model are physically hidden via specialized nodes.
+- **Live Tooltips**: Hover over any parameter in ComfyUI for real-time documentation.
+- **Metadata Recovery**: All nodes output the `actual_seed` used by the API for perfect reproducibility.
+- **Native Batching**: Returns standard ComfyUI `IMAGE` batch tensors.
 
 ---
 
-## 🛠️ Installation & Setup
+## 🧩 Comprehensive Node & Parameter Reference
 
-1. **Clone the Repository**:
-   ```bash
-   cd ComfyUI/custom_nodes/
-   git clone https://github.com/your-repo/comfyui_siliconflow.git
-   ```
-2. **Configure API Key**:
-   - Create a file named `apikey.txt` inside the `comfyui_siliconflow` directory.
-   - Paste your SiliconFlow API key (starting with `sk-`) into this file.
-3. **Restart ComfyUI**: The nodes will appear under the `SiliconFlow` category.
-
----
-
-## 🧩 Node Reference
-
-All nodes are found under the `SiliconFlow` category in the node search menu.
+All nodes return `(IMAGE, INT)` representing the image tensor and the `actual_seed`.
 
 ### 1. FLUX.2 Series
 
 #### 🎨 SiliconFlow — FLUX.2 Pro
 *High-quality professional generation.*
-- **model**: `black-forest-labs/FLUX.2-pro`
-- **image_size**: `512x512`, `768x1024`, `1024x768`, `576x1024`, `1024x576`
-- **seed**: 0 - 9999999999
-- **output_format**: `png`, `jpeg`
+- **model** (Required): `black-forest-labs/FLUX.2-pro`
+- **prompt** (Required): Text description of the image.
+- **image_size** (Required): [`512x512`, `768x1024`, `1024x768`, `576x1024`, `1024x576`]
+- **seed** (Required): `0 - 9999999999`.
+- **output_format** (Required): [`png`, `jpeg`]
 
 #### 🎨 SiliconFlow — FLUX.2 Flex
 *Flexible generation with CFG and step control.*
-- **model**: `black-forest-labs/FLUX.2-flex`
-- **image_size**: Same as Pro.
-- **seed**: 0 - 9999999999
-- **num_inference_steps**: 1 - 50 (Default: 25)
-- **cfg**: 0.1 - 20.0 (Default: 4.0)
-- **output_format**: `png`, `jpeg`
+- **model** (Required): `black-forest-labs/FLUX.2-flex`
+- **prompt** (Required): Text description.
+- **image_size** (Required): [`512x512`, `768x1024`, `1024x768`, `576x1024`, `1024x576`]
+- **seed** (Required): `0 - 9999999999`.
+- **num_inference_steps** (Optional): `1 - 50` (Default: `25`).
+- **cfg** (Optional): `0.1 - 20.0` (Default: `4.0`).
+- **output_format** (Optional): [`png`, `jpeg`]
 
 ---
 
 ### 2. FLUX.1 Series (Advanced)
 
 #### 🎨 SiliconFlow — FLUX-1.1 Pro
-*The high-performance 1.1 variant.*
-- **model**: `black-forest-labs/FLUX-1.1-pro`
-- **width/height**: 256 - 1440 (Multiples of 32)
-- **seed**: 0 - 9999999999
-- **image_prompt**: (Optional) Input `IMAGE` to use as a visual prompt.
-- **prompt_upsampling**: `True/False`
-- **safety_tolerance**: 0 - 6 (Default: 2)
-- **output_format**: `png`, `jpeg`
+*High-performance resolution control.*
+- **model** (Required): `black-forest-labs/FLUX-1.1-pro`
+- **prompt** (Required): Text description.
+- **width** (Required): `256 - 1440` (Must be multiple of 32, Default: `1024`).
+- **height** (Required): `256 - 1440` (Must be multiple of 32, Default: `768`).
+- **seed** (Required): `0 - 9999999999`.
+- **image_prompt** (Optional): `IMAGE` input for visual guidance.
+- **prompt_upsampling** (Optional): `True/False` (Automatic creative expansion).
+- **safety_tolerance** (Optional): `0 - 6` (0: Strictest, 6: Lenient, Default: `2`).
+- **output_format** (Optional): [`png`, `jpeg`]
 
 #### 🎨 SiliconFlow — FLUX-1.1 Pro Ultra
-*The ultimate generation node with batch and raw support.*
-- **model**: `black-forest-labs/FLUX-1.1-pro-Ultra`
-- **image_size**: `1024x1024`, `960x1280`, `768x1024`, `720x1440`, `720x1280`, `others`
-- **aspect_ratio**: `21:9` to `9:21` (Default: `1:1`)
-- **batch_size**: 1 - 4
-- **raw**: `True/False` (Less processed, more natural look)
-- **image_prompt**: Input `IMAGE` to remix.
-- **image_prompt_strength**: 0.0 - 1.0 (Blend between text and image prompt)
-- **safety_tolerance**: 0 - 6
-- **output_format**: `png`, `jpeg`
+*The flagship generation node with every available feature.*
+- **model** (Required): `black-forest-labs/FLUX-1.1-pro-Ultra`
+- **prompt** (Required): Text description.
+- **image_size** (Required): [`1024x1024`, `960x1280`, `768x1024`, `720x1440`, `720x1280`, `others`]
+- **seed** (Required): `0 - 9999999999`.
+- **negative_prompt** (Optional): Elements to avoid in the image.
+- **batch_size** (Optional): `1 - 4` (Generate multiple images in one go).
+- **aspect_ratio** (Optional): String between `21:9` and `9:21` (Default: `1:1`).
+- **safety_tolerance** (Optional): `0 - 6` (Default: `2`).
+- **output_format** (Optional): [`png`, `jpeg`]
+- **raw** (Optional): `True/False` (Generates more natural, photographic textures).
+- **image_prompt** (Optional): `IMAGE` to remix.
+- **image_prompt_strength** (Optional): `0.0 - 1.0` (Blend between text and image prompt, Default: `0.1`).
 
-#### 🎨 SiliconFlow — FLUX.1 Dev / Schnell
-*Efficient base models.*
-- **model**: `black-forest-labs/FLUX.1-dev`, `black-forest-labs/FLUX.1-schnell`
-- **image_size**: Spec-optimized presets (up to 2.3M pixels for Dev).
-- **num_inference_steps**: 1 - 30 (Dev only)
-- **prompt_enhancement**: `True/False`
+#### 🎨 SiliconFlow — FLUX.1 Dev
+- **model** (Required): `black-forest-labs/FLUX.1-dev`
+- **prompt** (Required): Text description.
+- **image_size** (Required): [`1024x1024`, `960x1280`, `768x1024`, `720x1440`, `720x1280`, `others`]
+- **num_inference_steps** (Required): `1 - 30` (Default: `20`).
+- **seed** (Required): `0 - 9999999999`.
+- **prompt_enhancement** (Optional): `True/False` (Optimize for model-friendliness).
+
+#### 🎨 SiliconFlow — FLUX.1 Schnell
+- **model** (Required): `black-forest-labs/FLUX.1-schnell`
+- **prompt** (Required): Text description.
+- **image_size** (Required): [`1024x1024`, `512x1024`, `768x512`, `768x1024`, `1024x576`, `576x1024`]
+- **seed** (Required): `0 - 9999999999`.
+- **prompt_enhancement** (Optional): `True/False`.
 
 ---
 
-### 3. Context & Image-to-Image
+### 3. Kontext (Image-to-Image)
 
 #### 🎨 SiliconFlow — FLUX.1 Kontext
-*Advanced image-to-image with aspect ratio control.*
-- **model**: `black-forest-labs/FLUX.1-Kontext-max`, `black-forest-labs/FLUX.1-Kontext-pro`
-- **image**: Required `IMAGE` input.
-- **aspect_ratio**: e.g., `16:9`, `1:1`.
-- **prompt_upsampling**: `True/False`
-- **safety_tolerance**: 0 - 6
+*Advanced context-aware generation.*
+- **model** (Required): `black-forest-labs/FLUX.1-Kontext-max`, `black-forest-labs/FLUX.1-Kontext-pro`
+- **prompt** (Required): Text description.
+- **image** (Required): `IMAGE` input (The base image).
+- **seed** (Required): `0 - 9999999999`.
+- **aspect_ratio** (Optional): String between `21:9` and `9:21` (Default: `1:1`).
+- **output_format** (Optional): [`png`, `jpeg`]
+- **prompt_upsampling** (Optional): `True/False`.
+- **safety_tolerance** (Optional): `0 - 6` (Note: Img2Img is usually capped at `2`).
 
 #### 🎨 SiliconFlow — FLUX.1 Kontext Dev
-*Context editing with prompt enhancement.*
-- **model**: `black-forest-labs/FLUX.1-Kontext-dev`
-- **image**: Required `IMAGE` input.
-- **prompt_enhancement**: `True/False`
+- **model** (Required): `black-forest-labs/FLUX.1-Kontext-dev`
+- **prompt** (Required): Text description.
+- **image** (Required): `IMAGE` input.
+- **seed** (Required): `0 - 9999999999`.
+- **prompt_enhancement** (Optional): `True/False`.
 
 ---
 
 ### 4. Qwen & Z-Image
 
 #### 🎨 SiliconFlow — Qwen Image
-*Supports both standard generation and image editing.*
-- **model**: `Qwen/Qwen-Image`, `Qwen/Qwen-Image-Edit`
-- **image_size**: Specialized Qwen resolutions (e.g., `1328x1328`, `1664x928`, etc.)
-- **batch_size**: 1 - 4
-- **guidance_scale**: 0.0 - 20.0 (Match degree between prompt and image)
-- **cfg**: 0.1 - 20.0 (Official recommendation: 4.0)
-- **image**: (Optional) For `Qwen-Image-Edit` models.
-- **num_inference_steps**: 1 - 100
+*Complete Qwen implementation supporting both generation and editing.*
+- **model** (Required): `Qwen/Qwen-Image`, `Qwen/Qwen-Image-Edit`
+- **prompt** (Required): Text description.
+- **image_size** (Required): [`1328x1328`, `1664x928`, `928x1664`, `1472x1140`, `1140x1472`, `1584x1056`, `1056x1584`]
+- **seed** (Required): `0 - 9999999999`.
+- **negative_prompt** (Optional): Elements to exclude.
+- **batch_size** (Optional): `1 - 4`.
+- **num_inference_steps** (Optional): `1 - 100` (Default: `20`).
+- **guidance_scale** (Optional): `0.0 - 20.0` (Stricter vs Creative adherence, Default: `7.5`).
+- **cfg** (Optional): `0.1 - 20.0` (Required for text generation, Default: `4.0`).
+- **image** (Optional): `IMAGE` input for editing models.
 
 #### 🎨 SiliconFlow — Z-Image
-*Turbo-charged generation.*
-- **model**: `Tongyi-MAI/Z-Image-Turbo`
-- **image_size**: `512x512`, `768x1024`, `1024x576`, `576x1024`
-- **negative_prompt**: Elements to avoid.
+*Ultra-fast turbo generation.*
+- **model** (Required): `Tongyi-MAI/Z-Image-Turbo`
+- **prompt** (Required): Text description.
+- **image_size** (Required): [`512x512`, `768x1024`, `1024x576`, `576x1024`]
+- **seed** (Required): `0 - 9999999999`.
+- **negative_prompt** (Optional): Elements to avoid.
 
 ---
 
-## 💡 Usage Tips
+## 🛠️ Setup
 
-- **Model Refresh**: The node dropdowns automatically populate based on your API account permissions.
-- **Tensors**: All outputs are standard `(B, H, W, C)` tensors. If you generate a batch of 4, you can use standard ComfyUI `Batch Image` nodes to split them.
-- **Error Handling**: If a model request fails, check the ComfyUI console for detailed API error responses.
+1. **API Key**: Create `apikey.txt` in the root folder and paste your key.
+2. **Category**: All nodes are under `SiliconFlow` in the ComfyUI menu.
 
 ## ⚖️ License
 MIT
