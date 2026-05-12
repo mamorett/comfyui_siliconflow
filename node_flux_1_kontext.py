@@ -12,10 +12,10 @@ class SiliconFlowFlux1Kontext(SiliconFlowBaseNode):
                 "model": (models, {"default": models[0], "tooltip": "FLUX.1 Kontext model ID."}),
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Text prompt."}),
                 "image": ("IMAGE", {"tooltip": "REQUIRED: Input image for Kontext model."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
-                "aspect_ratio": ("STRING", {"default": "1:1", "tooltip": "Aspect ratio between 21:9 and 9:21."}),
+                "aspect_ratio": (["1:1", "2:3", "3:4", "5:8", "9:16", "9:19", "9:21", "3:2", "4:3", "8:5", "16:9", "19:9", "21:9"], {"default": "1:1", "tooltip": "Aspect ratio between 21:9 and 9:21."}),
                 "output_format": (["png", "jpeg"], {"default": "png", "tooltip": "Output format."}),
                 "prompt_upsampling": ("BOOLEAN", {"default": False, "tooltip": "Automatically modifies prompt for more creative results."}),
                 "safety_tolerance": ("INT", {"default": 2, "min": 0, "max": 6, "tooltip": "Filter strictness (0: strictest, 6: most lenient). Img2Img capped at 2."}),

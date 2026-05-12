@@ -167,17 +167,20 @@ def run_inference(
         "prompt": prompt,
     }
 
-    # Add all supported parameters
     for key, value in kwargs.items():
-        if value is not None:
-            if key in ("image", "input_image", "image_prompt") and isinstance(value, str):
-                # Handle base64 prefixing if not already present
-                if not value.startswith("data:"):
-                    payload[key] = f"data:image/png;base64,{value}"
-                else:
-                    payload[key] = value
+        if value is None:
+            continue
+        if isinstance(value, str) and not value:
+            continue
+        if key == "seed" and value < 0:
+            continue
+        if key in ("image", "input_image", "image_prompt") and isinstance(value, str):
+            if not value.startswith("data:"):
+                payload[key] = f"data:image/png;base64,{value}"
             else:
                 payload[key] = value
+        else:
+            payload[key] = value
 
     resp = _make_request("POST", "/images/generations", payload=payload, timeout=120)
 
@@ -199,7 +202,7 @@ def run_inference(
                 results.append(base64.b64decode(item))
     
     # Extract seed from response
-    actual_seed = resp.get("seed", kwargs.get("seed", 0))
+    actual_seed = resp.get("seed", kwargs.get("seed", -1))
     
     return results, actual_seed
 

@@ -12,7 +12,7 @@ class SiliconFlowFlux1Dev(SiliconFlowBaseNode):
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Description."}),
                 "image_size": (["1024x1024", "960x1280", "768x1024", "720x1440", "720x1280", "others"], {"default": "1024x1024", "tooltip": "Size presets (max 2.3M pixels)."}),
                 "num_inference_steps": ("INT", {"default": 20, "min": 1, "max": 30, "tooltip": "Inference steps (1-30)."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
                 "prompt_enhancement": ("BOOLEAN", {"default": False, "tooltip": "Detail-optimized prompt."}),

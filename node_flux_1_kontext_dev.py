@@ -12,7 +12,7 @@ class SiliconFlowFlux1KontextDev(SiliconFlowBaseNode):
                 "model": (models, {"default": models[0], "tooltip": "FLUX.1 Kontext Dev model ID."}),
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Text prompt."}),
                 "image": ("IMAGE", {"tooltip": "REQUIRED: Input image."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
                 "prompt_enhancement": ("BOOLEAN", {"default": False, "tooltip": "Optimizes prompt to be more detailed and model-friendly."}),

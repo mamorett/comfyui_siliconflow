@@ -13,7 +13,7 @@ class SiliconFlowFlux11Pro(SiliconFlowBaseNode):
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Description."}),
                 "width": ("INT", {"default": 1024, "min": 256, "max": 1440, "step": 32, "tooltip": "Image width (multiple of 32)."}),
                 "height": ("INT", {"default": 768, "min": 256, "max": 1440, "step": 32, "tooltip": "Image height (multiple of 32)."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
                 "image_prompt": ("IMAGE", {"tooltip": "Visual prompt for image-guided generation."}),

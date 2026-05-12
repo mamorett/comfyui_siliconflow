@@ -11,7 +11,7 @@ class SiliconFlowFlux1Schnell(SiliconFlowBaseNode):
                 "model": (models, {"default": models[0], "tooltip": "FLUX.1 Schnell model ID."}),
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Image prompt."}),
                 "image_size": (["1024x1024", "512x1024", "768x512", "768x1024", "1024x576", "576x1024"], {"default": "1024x1024", "tooltip": "Size presets."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
                 "prompt_enhancement": ("BOOLEAN", {"default": False, "tooltip": "Detail-optimized prompt."}),

@@ -12,7 +12,7 @@ class SiliconFlowQwenImage(SiliconFlowBaseNode):
                 "model": (models, {"default": models[0], "tooltip": "Qwen-Image model ID."}),
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Image description."}),
                 "image_size": (["1328x1328", "1664x928", "928x1664", "1472x1140", "1140x1472", "1584x1056", "1056x1584"], {"default": "1328x1328", "tooltip": "Recommended Qwen resolutions."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
                 "negative_prompt": ("STRING", {"multiline": True, "tooltip": "Elements to exclude from the image."}),

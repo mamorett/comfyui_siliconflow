@@ -11,7 +11,7 @@ class SiliconFlowZImage(SiliconFlowBaseNode):
                 "model": (models, {"default": models[0], "tooltip": "Z-Image-Turbo model ID."}),
                 "prompt": ("STRING", {"multiline": True, "tooltip": "Image description."}),
                 "image_size": (["512x512", "768x1024", "1024x576", "576x1024"], {"default": "512x512", "tooltip": "Z-Image optimized resolutions."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 9999999999, "tooltip": "Random seed."}),
+                "seed": ("INT", {"default": -1, "min": -1, "max": 9999999999, "tooltip": "Random seed. Use -1 for random."}),
             },
             "optional": {
                 "negative_prompt": ("STRING", {"multiline": True, "tooltip": "Elements to exclude."}),
